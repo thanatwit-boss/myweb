@@ -12,26 +12,26 @@ $user_id = $_SESSION["user_id"];
 
 if (isset($_POST["upload"])) {
 
-    $file_name = $_FILES["image"]["name"];
-    $file_tmp  = $_FILES["image"]["tmp_name"];
-    $file_size = $_FILES["image"]["size"];
+    $file_name = $_FILES["files"]["name"];
+    $file_tmp  = $_FILES["files"]["tmp_name"];
+    $file_size = $_FILES["files"]["size"];
     $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
-    $allowed = ["jpg", "jpeg", "png", "gif"];
+    $allowed = ["pdf"];
 
     if (!in_array($file_ext, $allowed)) {
-        $message = "อนุญาตเฉพาะ JPG, JPEG, PNG, GIF";
+        $message = "อนุญาตเฉพาะ PDF";
     } elseif ($file_size > 2 * 1024 * 1024) {
         $message = "ไฟล์ต้องไม่เกิน 2MB";
     } else {
-        $new_name = uniqid("IMG_", true) . "." . $file_ext;
-        $upload_path = "uploads/" . $new_name;
+        $new_name = uniqid("PDF_", true) . "." . $file_ext;
+        $upload_path = "files/" . $new_name;
 
         if (move_uploaded_file($file_tmp, $upload_path)) {
 
             $stmt = mysqli_prepare(
                 $conn,
-                "INSERT INTO tbl_upload (user_id, image_name) VALUES (?, ?)"
+                "INSERT INTO tbl_files (user_id, files_name) VALUES (?, ?)"
             );
 
             mysqli_stmt_bind_param($stmt, "is", $user_id, $new_name);
@@ -53,7 +53,7 @@ include 'navbar.php';
 
 ?>
 
-<h2>Upload รูปภาพ</h2>
+<h2>Upload PDF</h2>
 
 <p>
     ผู้ใช้งาน: <?php echo $_SESSION["name"]; ?> |
@@ -61,33 +61,35 @@ include 'navbar.php';
 </p>
 
 <form method="post" enctype="multipart/form-data">
-    <input type="file" name="image" required>
-    <button type="submit" name="upload">Upload</button>
+    <input type="file" name="files" required>
+    <button type="submit" name="upload" class="btn">Upload PDF</button>
 </form>
 
 <p><?php echo $message; ?></p>
 
 <hr>
 
-<h2>รูปภาพของฉัน</h2>
+<h2>PDF ของฉัน</h2>
 
 <?php
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT * FROM tbl_upload WHERE user_id = ? ORDER BY id DESC"
+    "SELECT * FROM tbl_files WHERE user_id = ? ORDER BY id DESC"
 );
 
 mysqli_stmt_bind_param($stmt, "i", $user_id);
 mysqli_stmt_execute($stmt);
-
 $result = mysqli_stmt_get_result($stmt);
 
 while ($row = mysqli_fetch_assoc($result)) {
-    echo "<div style='margin-bottom:20px'>";
-    echo "<img src='uploads/" . htmlspecialchars($row["image_name"]) . " ' width='200'><br>";
-    echo "ชื่อไฟล์: " . htmlspecialchars($row["image_name"]);
-    echo "<a href='delete_image.php?id=" . $row["id"] . "' onclick='return confirm(\"คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพนี้?\")'> ลบ </a>";
-    echo "</div>";
+?>
+    <a href="files/<?php echo htmlspecialchars($row["files_name"]); ?>">
+     ชื่อไฟล์: <?php echo htmlspecialchars($row['files_name']);  ?>
+    </a> | 
+   <?php
+    echo "<a href='delete_file.php?id=" . $row["id"] . "' onclick='return confirm(\"คุณแน่ใจหรือไม่ว่าต้องการลบไฟล์นี้?\")'>ลบ</a>";
+    ?>
+    <br>
+<?php
 }
-
 ?>
